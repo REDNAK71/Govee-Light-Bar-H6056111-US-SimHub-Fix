@@ -1,0 +1,21 @@
+# Visual Studio local workspace
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build output
+**/bin/
+**/obj/
+*.pdb
+
+# Local logs and captures
+*.log
+*.etl
+*.pcap
+*.pcapng
+
+# OS-generated files
+.DS_Store
+Thumbs.db
