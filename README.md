@@ -131,9 +131,15 @@ Green, yellow caution, white, and the custom checkered effect were observed work
 
 ### Important limitations
 
-- The prototype's Govee IP address is currently configured in source code.
+- The Govee IP address can be configured in SimHub settings and is saved in the Windows user profile.
 - Compatibility with other Govee hardware revisions, firmware versions, and network setups has not yet been established.
 - This project is independent and is not an official Govee or SimHub product.
 - The public source project and redistribution terms still need final review before a formal release.
+
+### Configure the Govee IP Address
+
+The Govee light-bar IP address can be configured directly in SimHub. Open **NitroRedNAK Govee Bridge** settings, enter the local IPv4 address of your Govee light bars, and click **Save IP Address**.
+
+The default address is `10.0.0.4`. Replace it with the address assigned to your light bars on your local network. The plugin saves this setting in your Windows user profile and reloads it when SimHub starts. A newly saved address is used by subsequent flag effects.
 
 Feedback, reproducible test results, and compatibility reports from other racers are welcome.
