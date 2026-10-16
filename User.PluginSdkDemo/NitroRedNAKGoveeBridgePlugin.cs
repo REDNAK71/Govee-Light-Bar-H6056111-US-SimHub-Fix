@@ -1,10 +1,10 @@
-﻿using GameReaderCommon;
+using GameReaderCommon;
 using SimHub.Plugins;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
-using User.PluginSdkDemo;
+
 
 namespace NitroRedNAK.GoveeBridge
 {
