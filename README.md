@@ -68,3 +68,27 @@ Feedback and testing from other sim racers are welcome. When reporting an issue,
 Review logs and packet captures before sharing them; remove local IP addresses and any unrelated personal information.
 Project relationship and licensing
 This is an independent community project and is not affiliated with or endorsed by Govee or SimHub. Govee and SimHub are trademarks of their respective owners. The project uses SimHub plugin SDK APIs and began from an SDK demo. A project license has not yet been assigned; the source and included assets should be reviewed before choosing a license or redistributing third-party SDK material.
+
+## Install and activate in SimHub
+
+**Important: Building the plugin does not automatically mean it is enabled.**
+
+1. Build the project in Visual Studio on a Windows PC with SimHub installed.
+2. Close SimHub completely before installing the built DLL.
+3. Copy `NitroRedNAK.GoveeBridge.dll` into the main SimHub installation folder, alongside `SimHubWPF.exe`. The default location is:
+
+   `C:\Program Files (x86)\SimHub\`
+
+   If SimHub is installed somewhere else, use that installation folder.
+
+4. Start SimHub again.
+5. When SimHub detects the new plugin, **enable/activate it** in the new-plugin prompt.
+6. After activation, look for **NitroRedNAK Govee Bridge** in the left-hand menu.
+
+If you don't see the activation prompt, check SimHub's plugin settings to see whether the plugin can be enabled there.
+
+## Important prototype notes
+
+- This is an experimental community project, not an official Govee or SimHub patch.
+- The current prototype uses a configured IP address in the source code. Make sure it matches your Govee light-bar controller before testing.
+- Compatibility has only been tested on the developer's local setup with the hardware and firmware described above. Other configurations still need testing.
