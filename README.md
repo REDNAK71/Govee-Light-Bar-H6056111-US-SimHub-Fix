@@ -92,3 +92,48 @@ If you don't see the activation prompt, check SimHub's plugin settings to see wh
 - This is an experimental community project, not an official Govee or SimHub patch.
 - The current prototype uses a configured IP address in the source code. Make sure it matches your Govee light-bar controller before testing.
 - Compatibility has only been tested on the developer's local setup with the hardware and firmware described above. Other configurations still need testing.
+
+- ## Installation and activation
+
+**Important:** This is an experimental prototype. The current source has a configured Govee IP address, so you may need to change it before using the plugin on another PC or network.
+
+### Build the plugin
+
+1. Download the repository using **Code → Download ZIP**.
+2. Extract the ZIP to a folder on your Windows PC.
+3. Open `User.PluginSdkDemo/User.PluginSdkDemo.sln` in Visual Studio.
+4. Build the solution.
+5. Locate the compiled `NitroRedNAK.GoveeBridge.dll` in the project's `bin/Debug` folder.
+
+### Install and activate in SimHub
+
+1. Close SimHub completely.
+2. Back up any existing `NitroRedNAK.GoveeBridge.dll` in your SimHub installation folder.
+3. Copy the newly built DLL beside `SimHubWPF.exe`. The default folder is:
+
+   `C:\Program Files (x86)\SimHub`
+
+4. Start SimHub again.
+5. When SimHub detects the new plugin, enable or activate it if prompted.
+6. Look for **NitroRedNAK Govee Bridge** in SimHub's left-hand menu.
+7. Enable **Ambient lights** and make sure your Govee lights have LAN control enabled in the Govee app.
+
+### Tested configuration
+
+The prototype was tested on the developer's setup with:
+
+- Govee H6056 / H6056111-US RGBIC TV Light Bars
+- Govee app firmware reported as `1.00.03`
+- SimHub and iRacing replay testing
+- Six-zone direct UDP lighting control
+
+Green, yellow caution, white, and the custom checkered effect were observed working in the tested setup.
+
+### Important limitations
+
+- The prototype's Govee IP address is currently configured in source code.
+- Compatibility with other Govee hardware revisions, firmware versions, and network setups has not yet been established.
+- This project is independent and is not an official Govee or SimHub product.
+- The public source project and redistribution terms still need final review before a formal release.
+
+Feedback, reproducible test results, and compatibility reports from other racers are welcome.
