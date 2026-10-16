@@ -4,6 +4,9 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
 
 
 namespace NitroRedNAK.GoveeBridge
@@ -18,7 +21,20 @@ namespace NitroRedNAK.GoveeBridge
     public class NitroRedNAKGoveeBridgePlugin : IPlugin, IDataPlugin, IWPFSettingsV2
     {
         // Prototype default. A future settings page will make this configurable.
-        private const string GoveeIpAddress = "10.0.0.4";
+        private volatile string GoveeIpAddress = "10.0.0.4";
+        private static readonly string GoveeSettingsDirectory =
+    Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "NitroRedNAK",
+        "GoveeBridge");
+
+        private static readonly string GoveeSettingsFilePath =
+            Path.Combine(GoveeSettingsDirectory, "settings.txt");
+
+        public string CurrentGoveeIpAddress
+        {
+            get { return GoveeIpAddress; }
+        }
 
         private volatile string requestedEffectName = null;
 
@@ -43,6 +59,7 @@ namespace NitroRedNAK.GoveeBridge
         public void Init(PluginManager pluginManager)
         {
             PluginManager = pluginManager;
+            LoadGoveeIpAddress();
 
             SimHub.Logging.Current.Info(
                 "Starting NitroRedNAK Govee Bridge.");
@@ -54,6 +71,65 @@ namespace NitroRedNAK.GoveeBridge
                 () => RunFlagEffectControllerAsync(
                     effectControllerCancellation.Token));
         }
+
+        private void LoadGoveeIpAddress()
+        {
+            try
+            {
+                if (!File.Exists(GoveeSettingsFilePath))
+                    return;
+
+                string savedAddress = File.ReadAllText(
+                    GoveeSettingsFilePath).Trim();
+
+                IPAddress parsedAddress;
+
+                if (IPAddress.TryParse(savedAddress, out parsedAddress) &&
+                    parsedAddress.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    GoveeIpAddress = parsedAddress.ToString();
+                }
+            }
+            catch
+            {
+                // Keep the default address if the settings file cannot be read.
+            }
+        }
+
+        public bool SaveGoveeIpAddress(string address, out string message)
+        {
+            address = (address ?? string.Empty).Trim();
+
+            IPAddress parsedAddress;
+
+            if (!IPAddress.TryParse(address, out parsedAddress) ||
+                parsedAddress.AddressFamily != AddressFamily.InterNetwork)
+            {
+                message = "Enter a valid IPv4 address, such as 192.168.1.50.";
+                return false;
+            }
+
+            try
+            {
+                string validatedAddress = parsedAddress.ToString();
+
+                Directory.CreateDirectory(GoveeSettingsDirectory);
+                File.WriteAllText(
+                    GoveeSettingsFilePath,
+                    validatedAddress);
+
+                GoveeIpAddress = validatedAddress;
+
+                message = "IP address saved. The next flag effect will use it.";
+                return true;
+            }
+            catch (Exception ex)
+            {
+                message = "Could not save the IP address: " + ex.Message;
+                return false;
+            }
+        }
+
 
         /// <summary>
         /// Reads live race flags and requests the appropriate custom effect.
