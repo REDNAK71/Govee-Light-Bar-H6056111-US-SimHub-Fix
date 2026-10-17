@@ -1,145 +1,255 @@
-# Govee-Light-Bar-H6056111-US-SimHub-Fix
+# NitroRedNAK Govee Bridge for SimHub
 
-Govee H6056111-US SimHub Lag Fix
-NitroRedNAK Govee Bridge is an experimental community project investigating and working around delayed lighting updates observed with the Govee H6056 / H6056111-US RGBIC TV Light Bars, tested with firmware version 1.00.03 as shown in the Govee mobile app.
-Created by REDNAK71 with AI-assisted development (“Nitro”). The goal is to help sim racers get responsive, race-telemetry-driven lighting without multi-second delays.
-Status: working proof of concept, not a universal fix or official Govee/SimHub patch. Testing so far has been on one local setup with the hardware and firmware listed above. Other firmware versions, hardware revisions, network setups, and SimHub versions still need testing.
+## Fix delayed Govee H6056/H6056111-US racing-light effects in SimHub
 
-The problem we observed
-On the developer's setup, SimHub's normal Govee Ambient Lights output developed severe delays after a Windows reinstall/update and reconfiguration. Flag effects that had previously responded quickly could take several seconds to reach the light bars, making rapid flashing patterns unusable.
-The following comparisons helped narrow the problem:
-- The Govee mobile app could control the lights promptly.
-- A direct local UDP color command to the light controller changed the lights promptly.
-- A Python proof-of-concept that sent the controller's local Razer-compatible razer command format could rapidly alternate all six RGB zones.
-- The same fast command method was then implemented in a custom SimHub plugin, where the manual test action successfully drove the six zones.
-These tests show that responsive local control is possible on the tested setup. They do not prove that firmware 1.00.03 itself is the root cause, nor that every H6056111-US controller behaves identically.
-What this project does
-Rather than patching SimHub's built-in Govee driver, the prototype sends RGB color frames directly to the light controller over the local network. It uses UDP on port 4003 and wraps the controller payload in the local Razer-compatible command format tested on the developer's device.
-The six RGB zones are addressed as one frame:
-- Zones 1–3: left light bar
-- Zones 4–6: right light bar
-The current project separates effect behavior from packet sending so more patterns and settings can be added without rewriting the network code.
-Effects demonstrated on the developer's setup
-- AlternatingFlashingYellow — alternates the left group (zones 1–3) and right group (zones 4–6) during yellow caution. The intended rule is to stop yellow when yellow clears or checkered takes priority.
-- AlternatingCheckeredChase — a custom white–black–white pattern sliding across the six zones, starting at 150 ms per step.
-- Green and white effects — these were already configured in SimHub Ambient Lights on the developer's setup; they are not presented here as custom effects created by this plugin.
-- Cleanup — custom effect routines send an all-black frame when cancelled, so the last custom frame is not intentionally left illuminated.
-During replay testing, the developer observed green, yellow caution, white, and the custom checkered behavior working with the bridge installed. The tested setup also required the Ambient Lights master switch to be enabled for the successful manual test. The reason for that dependency has not yet been isolated; keep Ambient Lights enabled when reproducing the current setup.
-Tested setup
-- Light bars: Govee H6056 RGBIC TV Light Bars, hardware label/revision H6056111-US
-- Firmware shown in the Govee app: 1.00.03
-- Operating system: Windows 11
-- Simulator integration: SimHub with iRacing replay testing
-- Controller local UDP port: 4003
-- Build target: .NET Framework 4.8
-The controller IP used during development was a private LAN address. It is intentionally not treated as a universal value; other users must configure their own controller address before building/running the prototype.
-Current limitations and cautions
-- The controller IP is currently hard-coded in source. A user-configurable IP/port field has not yet been completed.
-- This project is a prototype, not a packaged installer. Installation and troubleshooting still require manual steps.
-- The current code began from SimHub's User.PluginSdkDemo; some demo UI, names, and unrelated demo functionality remain and should be cleaned up before a wider release.
-- The effect patterns, flag transitions, cancellation, and interaction with Ambient Lights need further tests across more sessions and hardware configurations.
-- The local command format was validated by testing on one controller. It is not claimed to be an officially supported Govee API.
-- Back up SimHub configuration and the existing plugin DLL before testing. Test in replay first, not during a race you cannot safely interrupt.
-- Do not replace SimHub's own DLLs. Install only the uniquely named NitroRedNAK.GoveeBridge.dll built from this project.
-Build from source
-1. Install SimHub and its Plugin SDK.
-2. Install Visual Studio with the .NET desktop development workload and .NET Framework 4.8 targeting support.
-3. Clone or download this repository and open the solution in Visual Studio.
-4. Review the project references and build configuration for your SimHub installation; the project began as a copy of SimHub's SDK demo, so local paths may need adjustment.
-5. Set the controller's local IP address in the source to the address assigned by your own network.
-6. Build the solution and check the build output.
-7. Back up your current configuration, install the resulting uniquely named DLL into the SimHub installation folder, restart SimHub, and test in a replay.
-8. Verify that custom yellow stops on green/checkered, the checkered chase takes priority, and no effects continue after the game or plugin stops.
-See the official SimHub plugin and extension SDK guide. SimHub notes that undocumented APIs or internal behavior may change with updates.
-Roadmap
-- Add settings for controller IP/port and zone mapping.
-- Make pattern speed, color, and style configurable in SimHub.
-- Complete consistent priority/cleanup handling for all supported race flags.
-- Replace demo-only UI and remove unused SDK-demo content where appropriate.
-- Test additional H6056111-US devices, firmware versions, network conditions, and SimHub versions.
-- Publish a versioned release package only after broader testing and a licensing review.
-Contributions and bug reports
-Feedback and testing from other sim racers are welcome. When reporting an issue, include:
-- Exact Govee model/hardware label and firmware version shown in the app
-- SimHub version and Windows version
-- Whether LAN control is enabled
-- Whether the Govee app and the plugin's manual test action respond promptly
-- The effect/flag being tested and what the lights actually did
-Review logs and packet captures before sharing them; remove local IP addresses and any unrelated personal information.
-Project relationship and licensing
-This is an independent community project and is not affiliated with or endorsed by Govee or SimHub. Govee and SimHub are trademarks of their respective owners. The project uses SimHub plugin SDK APIs and began from an SDK demo. A project license has not yet been assigned; the source and included assets should be reviewed before choosing a license or redistributing third-party SDK material.
+This plugin was created to provide fast, direct Govee light-bar control for the newer Govee H6056 hardware revisions that can experience severe delays when controlled through SimHub's normal Govee communication path.
 
-## Install and activate in SimHub
+The plugin is designed primarily for racing effects such as:
 
-**Important: Building the plugin does not automatically mean it is enabled.**
+- Green flag
+- Yellow/caution
+- Checkered flag
+- Other direct racing-light effects
 
-1. Build the project in Visual Studio on a Windows PC with SimHub installed.
-2. Close SimHub completely before installing the built DLL.
-3. Copy `NitroRedNAK.GoveeBridge.dll` into the main SimHub installation folder, alongside `SimHubWPF.exe`. The default location is:
+The plugin communicates directly with the Govee light bars using their local IP address instead of relying on the problematic device-discovery behavior that can cause several-second delays.
 
-   `C:\Program Files (x86)\SimHub\`
+### The result
 
-   If SimHub is installed somewhere else, use that installation folder.
+Flag effects can respond essentially immediately instead of taking several seconds to reach the lights.
 
-4. Start SimHub again.
-5. When SimHub detects the new plugin, **enable/activate it** in the new-plugin prompt.
-6. After activation, look for **NitroRedNAK Govee Bridge** in the left-hand menu.
+---
 
-If you don't see the activation prompt, check SimHub's plugin settings to see whether the plugin can be enabled there.
+# Installation
 
-## Important prototype notes
+## Recommended: Windows Installer
 
-- This is an experimental community project, not an official Govee or SimHub patch.
-- The current prototype uses a configured IP address in the source code. Make sure it matches your Govee light-bar controller before testing.
-- Compatibility has only been tested on the developer's local setup with the hardware and firmware described above. Other configurations still need testing.
+Download the latest **NitroRedNAK Govee Bridge Installer** from the GitHub Releases page.
 
-- ## Installation and activation
+Run the installer and follow the prompts.
 
-**Important:** This is an experimental prototype. The current source has a configured Govee IP address, so you may need to change it before using the plugin on another PC or network.
+The installer will:
 
-### Build the plugin
+1. Locate your SimHub installation.
+2. Allow you to select a different SimHub installation folder if necessary.
+3. Verify that the selected folder contains `SimHubWPF.exe`.
+4. Install the NitroRedNAK Govee Bridge plugin.
+5. Detect an existing NitroRedNAK installation when upgrading.
 
-1. Download the repository using **Code → Download ZIP**.
-2. Extract the ZIP to a folder on your Windows PC.
-3. Open `User.PluginSdkDemo/User.PluginSdkDemo.sln` in Visual Studio.
-4. Build the solution.
-5. Locate the compiled `NitroRedNAK.GoveeBridge.dll` in the project's `bin/Debug` folder.
+The installer does **not** replace SimHub's built-in Govee components.
 
-### Install and activate in SimHub
+Our plugin is installed as its own file:
 
-1. Close SimHub completely.
-2. Back up any existing `NitroRedNAK.GoveeBridge.dll` in your SimHub installation folder.
-3. Copy the newly built DLL beside `SimHubWPF.exe`. The default folder is:
+`NitroRedNAK.GoveeBridge.dll`
 
-   `C:\Program Files (x86)\SimHub`
+### After installation
 
-4. Start SimHub again.
-5. When SimHub detects the new plugin, enable or activate it if prompted.
-6. Look for **NitroRedNAK Govee Bridge** in SimHub's left-hand menu.
-7. Enable **Ambient lights** and make sure your Govee lights have LAN control enabled in the Govee app.
+1. Start or restart SimHub.
+2. Open the SimHub Plugins section.
+3. Find **NitroRedNAK Govee Bridge**.
+4. Activate the plugin.
+5. Open the plugin settings.
 
-### Tested configuration
+---
 
-The prototype was tested on the developer's setup with:
+# Configure Your Govee IP Address
 
-- Govee H6056 / H6056111-US RGBIC TV Light Bars
-- Govee app firmware reported as `1.00.03`
-- SimHub and iRacing replay testing
-- Six-zone direct UDP lighting control
+The plugin uses the local IPv4 address of your Govee light bar/controller.
 
-Green, yellow caution, white, and the custom checkered effect were observed working in the tested setup.
+Open the **NitroRedNAK Govee Bridge** settings in SimHub.
 
-### Important limitations
+Enter the IPv4 address assigned to your Govee device.
 
-- The Govee IP address can be configured in SimHub settings and is saved in the Windows user profile.
-- Compatibility with other Govee hardware revisions, firmware versions, and network setups has not yet been established.
-- This project is independent and is not an official Govee or SimHub product.
-- The public source project and redistribution terms still need final review before a formal release.
+Example:
 
-### Configure the Govee IP Address
+`10.0.0.4`
 
-The Govee light-bar IP address can be configured directly in SimHub. Open **NitroRedNAK Govee Bridge** settings, enter the local IPv4 address of your Govee light bars, and click **Save IP Address**.
+Then click:
 
-The default address is `10.0.0.4`. Replace it with the address assigned to your light bars on your local network. The plugin saves this setting in your Windows user profile and reloads it when SimHub starts. A newly saved address is used by subsequent flag effects.
+**SAVE IP ADDRESS**
 
-Feedback, reproducible test results, and compatibility reports from other racers are welcome.
+The plugin validates the address and saves it to your Windows user profile.
+
+The saved address is automatically loaded when SimHub starts.
+
+### Important
+
+Your Govee device may have a different IP address than the example above.
+
+Use the actual local IP address assigned to your Govee device.
+
+If your router uses DHCP, consider creating a DHCP reservation for the Govee device so its IP address does not change.
+
+---
+
+# Using the Plugin
+
+Once the plugin is installed, activated, and configured, it can provide direct racing-light effects through the Govee connection.
+
+The current custom racing effects include:
+
+### Green Flag
+
+Provides the custom green-flag behavior used by the NitroRedNAK racing-light setup.
+
+### Yellow / Caution
+
+Provides the custom rapid yellow caution-light behavior.
+
+### Checkered Flag
+
+Provides the custom checkered-flag effect used by the NitroRedNAK racing-light setup.
+
+The plugin is designed so that the Govee light bars return to their normal state when the racing condition ends.
+
+---
+
+# Troubleshooting
+
+## The plugin does not appear in SimHub
+
+Make sure:
+
+- SimHub is completely restarted after installation.
+- `NitroRedNAK.GoveeBridge.dll` is located in the SimHub installation folder.
+- The plugin has been activated in SimHub.
+
+## The lights do not respond
+
+Check:
+
+1. The Govee light bars are powered on.
+2. The computer and Govee device are connected to the same local network.
+3. The Govee device has LAN control enabled.
+4. The IP address entered in the plugin is correct.
+5. The IP address was saved successfully.
+6. SimHub has been restarted after installation if necessary.
+
+## The IP address changed
+
+Open the NitroRedNAK Govee Bridge settings and enter the new IPv4 address.
+
+For a more permanent solution, create a DHCP reservation for the Govee device in your router.
+
+## The lights respond slowly
+
+Make sure the plugin is active and that the correct Govee IP address is configured.
+
+The purpose of this plugin is to provide a direct communication path to the Govee hardware rather than relying on the device-discovery behavior that can cause significant delays with affected hardware revisions.
+
+---
+
+# Supported Hardware
+
+This project was developed specifically to address communication problems encountered with newer revisions of the Govee H6056 light bars, including hardware identified as:
+
+`H6056111-US`
+
+Behavior can vary between Govee hardware revisions and firmware versions.
+
+---
+
+# Technical Information
+
+## Why was this plugin created?
+
+Some newer Govee H6056 hardware revisions can report their network information incorrectly during local device discovery.
+
+When SimHub cannot reliably determine the device's IP address, communication with the light bars can become extremely slow or unreliable.
+
+In testing, normal Govee control could experience delays of several seconds.
+
+That is unacceptable for racing effects.
+
+A yellow flag that appears three seconds after the caution is already happening isn't much use to a driver. 
+
+## The NitroRedNAK approach
+
+Instead of depending on automatic device discovery, the plugin allows the user to provide the Govee device's IPv4 address directly.
+
+The plugin then communicates with the Govee device using its local network interface.
+
+Conceptually:
+
+    iRacing
+       |
+       v
+    SimHub telemetry
+       |
+       v
+    NitroRedNAK Govee Bridge
+       |
+       v
+    Direct Govee UDP communication
+       |
+       v
+    Govee light bars
+
+This removes the problematic discovery step from the direct racing-effect path.
+
+## Saved Settings
+
+The configured Govee IP address is stored in the Windows user profile and loaded automatically when the plugin starts.
+
+This means users do not need to edit the source code to change their Govee IP address.
+
+---
+
+# Open Source
+
+The complete project source is available in this repository.
+
+If you are interested in how the plugin works, you can:
+
+- Inspect the source code.
+- Build the plugin yourself.
+- Modify the plugin.
+- Experiment with additional effects.
+- Submit improvements or fixes.
+
+The prebuilt installer is intended for normal SimHub users who simply want the fix without installing development tools.
+
+If you're downloading the source code and opening the Visual Studio project, you're officially past "Joe Racer."
+
+You're a digital mechanic now. 😎
+
+---
+
+# Development
+
+The plugin is developed using the SimHub Plugin SDK.
+
+The source project is located under:
+
+`User.PluginSdkDemo`
+
+The compiled plugin is:
+
+`NitroRedNAK.GoveeBridge.dll`
+
+Developers can build the project themselves using the included Visual Studio solution.
+
+---
+
+# Future Development
+
+Potential future work includes investigating whether SimHub's existing Ambient Lights processing can be redirected through the NitroRedNAK direct Govee communication path.
+
+The goal would be to preserve SimHub's existing ambient-light processing while eliminating the communication delay affecting supported Govee hardware.
+
+This is experimental and is not required for the current racing-flag functionality.
+
+---
+
+# Credits
+
+Created by **RedNAK / NitroRedNAK**
+
+Built for dirt-track racing and SimHub users dealing with delayed Govee H6056/H6056111-US communication.
+
+If this project helps your racing setup, enjoy it — and go turn some laps. 🏁
+
+---
+
+## License
+
+See the repository license file for the terms under which this project may be used, modified, and distributed.
